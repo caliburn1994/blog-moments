@@ -33,18 +33,21 @@ func main() {
 			PushButton{
 				Text: "SCREAM",
 				OnClicked: func() {
-					var test = "\n <div class=\"card hoverable\"><div class=\"card-content\"> \n"
-					test += inTE.Text()
-					test += "\n <p align='right'>" +
+					var context = "\n <div class=\"card hoverable\"><div class=\"card-content\"> \n"
+					context += inTE.Text()
+					context += "\n <p align='right'>" +
 						time.Now().Format("2006-01-02") +
 						"</p></div></div> \n"
 
 					//输出GUI
-					outTE.SetText(test)
+					outTE.SetText(context)
 
 					//输出文件
 					SetConfig(filePath.Text())
-					rewriteFile(filePath.Text(), test)
+					rewriteFile(filePath.Text(), context)
+
+					//提交git
+					Update(filePath.Text())
 				},
 			},
 		},
@@ -53,6 +56,7 @@ func main() {
 	mainWindow.Run()
 
 }
+
 
 /*
 rewriteFile 覆盖写入文件
