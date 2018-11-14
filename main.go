@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
-	"os"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
@@ -34,20 +34,22 @@ func main() {
 				Text: "SCREAM",
 				OnClicked: func() {
 					var context = "\n <div class=\"card hoverable\"><div class=\"card-content\"> \n"
-					context += inTE.Text()
+					context += AddMarkdown(inTE.Text())
 					context += "\n <p align='right'>" +
 						time.Now().Format("2006-01-02") +
-						"</p></div></div> \n"
+						"</p></div></div> \n\n"
 
 					//输出GUI
 					outTE.SetText(context)
 
-					//输出文件
-					SetConfig(filePath.Text())
-					rewriteFile(filePath.Text(), context)
+					go func() {
+						//输出文件
+						SetConfig(filePath.Text())
+						rewriteFile(filePath.Text(), context)
 
-					//提交git
-					Update(filePath.Text())
+						//提交git
+						Update(filePath.Text())
+					}()
 				},
 			},
 		},
@@ -56,6 +58,7 @@ func main() {
 	mainWindow.Run()
 
 }
+
 
 
 /*
@@ -99,5 +102,7 @@ func rewriteFile(file, head string) bool {
 旧内容前多了一个回车，须删除。
 */
 func removePrefix(s string) string {
-	return strings.TrimPrefix(s, "\n")
+	tmp:=strings.TrimPrefix(s, "\r\n")
+	rsl:=strings.TrimPrefix(tmp, "\n")//回车有区别
+	return rsl
 }
