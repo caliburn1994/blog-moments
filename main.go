@@ -1,22 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
 
-func main() {
-	var inTE, outTE *walk.TextEdit
-	var filePath *walk.LineEdit
+type MyMainWindow struct {
+	*walk.MainWindow
+}
 
-	mainWindow := MainWindow{
-		Title:   "SCREAMO",
-		MinSize: Size{600, 400},
-		Layout:  VBox{},
+var inTE, outTE *walk.TextEdit
+var filePath *walk.LineEdit
+var mw *MyMainWindow;
+
+func main() {
+
+	mw = new(MyMainWindow)
+
+	MainWindow{
+		AssignTo: &mw.MainWindow,
+		Title:    "SCREAMO",
+		MinSize:  Size{600, 400},
+		Layout:   VBox{},
 		Children: []Widget{
 
 			LineEdit{
@@ -30,36 +41,71 @@ func main() {
 				},
 			},
 
-			PushButton{
-				Text: "SCREAM",
-				OnClicked: func() {
-					var context = "\n <div class=\"card hoverable\"><div class=\"card-content\"> \n"
-					context += AddMarkdown(inTE.Text())
-					context += "\n <p align='right'>" +
-						time.Now().Format("2006-01-02") +
-						"</p></div></div> \n\n"
-
-					//输出GUI
-					outTE.SetText(context)
-
-					go func() {
-						//输出文件
-						SetConfig(filePath.Text())
-						rewriteFile(filePath.Text(), context)
-
-						//提交git
-						Update(filePath.Text())
-					}()
+			HSplitter{
+				Children: []Widget{
+					PushButton{
+						Text:      "上传",
+						OnClicked: pushGit,
+					},
+					PushButton{
+						Text:      "打开",
+						OnClicked: openMoments,
+					},
 				},
 			},
 		},
-	}
+	}.Create()
 
-	mainWindow.Run()
+	mw.Run()
 
 }
 
+//打开文件
+func openMoments() {
+	out, err := exec.Command("cmd", "/c"," start ", ""+filePath.Text()+"").CombinedOutput()
+	//	out, err := exec.Command("start", "/c"," start ", ""+s+"").CombinedOutput()
+	if err == nil {
+		fmt.Println("start ", filePath.Text(), " err:", err)
+	}
+	fmt.Println("start ", filePath.Text(), " out:", string(out))
+}
 
+func pushGit() {
+
+	var context string;
+
+	//内容为空时，不输出
+	if len(inTE.Text()) != 0 {
+		context = "\n <div class=\"card hoverable\"><div class=\"card-content\"> \n"
+		context += AddMarkdown(inTE.Text())
+		context += "\n <p align='right'>" +
+			time.Now().Format("2006-01-02") +
+			"</p></div></div> \n\n"
+
+		//输出GUI
+		outTE.SetText(context)
+	}
+
+	go func() {
+		//修改配置文件
+		SetConfig(filePath.Text())
+
+		//覆盖内容文本
+		if len(inTE.Text()) != 0 {
+			rewriteFile(filePath.Text(), context)
+		}
+
+		//提交git
+		rsl := Update(filePath.Text())
+
+		//检测提交成功否
+		mw.specialAction_Triggered(rsl)
+	}()
+}
+
+func (mw *MyMainWindow) specialAction_Triggered(msg string) {
+	walk.MsgBox(mw, "Special", msg, walk.MsgBoxIconInformation)
+}
 
 /*
 rewriteFile 覆盖写入文件
@@ -102,7 +148,7 @@ func rewriteFile(file, head string) bool {
 旧内容前多了一个回车，须删除。
 */
 func removePrefix(s string) string {
-	tmp:=strings.TrimPrefix(s, "\r\n")
-	rsl:=strings.TrimPrefix(tmp, "\n")//回车有区别
+	tmp := strings.TrimPrefix(s, "\r\n")
+	rsl := strings.TrimPrefix(tmp, "\n") //回车有区别
 	return rsl
 }

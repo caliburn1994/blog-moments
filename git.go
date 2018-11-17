@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-var dir string =""
+var dir = ""
 
-func gitCommand(command string) {
+func gitCommand(command string) (result string) {
 	// Split string 分割参数
 	r := csv.NewReader(strings.NewReader(command))
 	r.Comma = ' ' // space
@@ -24,34 +24,25 @@ func gitCommand(command string) {
 	cmd := exec.Command("git", paras...)
 	cmd.Dir = dir
 
-
 	out, err := cmd.CombinedOutput()
-
 	if err != nil {
-		fmt.Printf("git error : %s ",err)
+		result += fmt.Sprintf("Git Error : %s \n ", err)
+	} else {
+		result += fmt.Sprintf("Git Result : %s \n ", out)
 	}
-
-	//转换windows cmd的编码
-	fmt.Println("Result:", string(out))
+	return
 }
 
+func Update(filePath string) (rsl string){
 
+	path, name := filepath.Split(filePath)
+	dir = path
 
-func Update(filePath string) {
+	//fmt.Printf("dir=%s , name = %s \n",dir,name)
 
-	path ,name:=filepath.Split(filePath)
-	dir=path
+	rsl += gitCommand("add " + name)
+	rsl += gitCommand("commit -m \"update moments 更新动态\"")
+	rsl += gitCommand("push origin master")
 
-	fmt.Printf("dir=%s , name = %s \n",dir,name)
-
-	gitCommand("add "+name)
-	gitCommand("commit -m \"update moments 更新动态\"")
-	gitCommand("push origin master")
-	//	PushGit()
+	return
 }
-
-/*func main() {
-	Update("F:/GitHub/caliburn1994.github.io/_includes/moments.md")
-}*/
-
-
